@@ -119,14 +119,20 @@ allocproc(void)
 found:
   p->pid = allocpid();
   p->state = USED;
-
+  p->alarm_ticks = 0;
+  p->ticks = 0;
+  p->handlefinished = 1;
   // Allocate a trapframe page.
   if((p->trapframe = (struct trapframe *)kalloc()) == 0){
     freeproc(p);
     release(&p->lock);
     return 0;
   }
-
+  if((p->temp = (struct trapframe *)kalloc()) == 0){
+    freeproc(p);
+    release(&p->lock);
+    return 0;
+  }
   // An empty user page table.
   p->pagetable = proc_pagetable(p);
   if(p->pagetable == 0){
@@ -152,6 +158,9 @@ freeproc(struct proc *p)
 {
   if(p->trapframe)
     kfree((void*)p->trapframe);
+  if(p->temp)
+    kfree((void*)p->temp);
+  p->temp = 0;
   p->trapframe = 0;
   if(p->pagetable)
     proc_freepagetable(p->pagetable, p->sz);
@@ -653,4 +662,19 @@ procdump(void)
     printf("%d %s %s", p->pid, state, p->name);
     printf("\n");
   }
+}
+
+int sigalarm(int ticks, void (*handler)()){
+  struct proc *p = myproc();
+  p->alarm_ticks = ticks;
+  p->handler = handler;
+  p->ticks = 0;
+  return 0;
+}
+
+int sigreturn(){
+  struct proc *p = myproc();
+  *(p->trapframe) = *(p->temp);
+  p->handlefinished = 1;
+  return 0;
 }

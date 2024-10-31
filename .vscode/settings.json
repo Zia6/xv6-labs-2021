@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "stdarg.h": "c",
+        "defs.h": "c",
+        "proc.h": "c",
+        "syscall.h": "c",
+        "fs.h": "c",
+        "spinlock.h": "c"
+    }
+}
